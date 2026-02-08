@@ -1,12 +1,24 @@
 import { Database } from './database';
 import './style.css'
 import { CurrentQuestion } from './types';
+import "./editor.ts";
 
 const code = document.getElementById("code")!;
 const input = document.getElementById("input")! as HTMLInputElement;
 
+const gameElement = document.getElementById("game")!;
+
 input.oninput = () => CheckInput();
 window.onkeyup = (e) => {
+    if(
+        //game is hidden - no input
+        document.getElementById("game")!.hidden ||
+        //if disabled, don't allow interaction, unless we are to skip an incorrect question
+        (
+            input.disabled && !incorrectSkip
+        )
+    )
+        return;
     if (e.key == "Enter" || e.keyCode == 13){
         if(incorrectSkip)
             Incorrect();
@@ -15,12 +27,28 @@ window.onkeyup = (e) => {
     }
 };
 
-window.onload = ReadyNewQuestion;
 
+let gameStart = false;
 let currentQuestion: CurrentQuestion;
 
+export function StartGame(){
+    gameStart = true;
+    document.getElementById("noDataNotice")!.hidden = true;
+    gameElement.hidden = false;
+    ReadyNewQuestion();
+}
+
+export function SetGameHiddenState(hidden : boolean){
+    if(!gameStart) return;
+    gameElement.hidden = hidden;
+}
+
+function SetHelper(text = "Stiskni Enter pro potvrzení"){
+    document.getElementById("helper")!.innerHTML = text;
+}
 
 function SelectNewQuestion() {
+    SetHelper();
     let codes = Database.Codes;
     let randomCode = codes[Math.floor(Math.random() * codes.length)];
     currentQuestion = new CurrentQuestion(randomCode, Database.Data[randomCode], Math.random() >= 0.5);
@@ -66,6 +94,7 @@ async function Incorrect() {
         incorrectSkip = false;
         return;
     }
+    SetHelper("Stiskni ENTER");
     input.value = currentQuestion.GuessedString;
     input.style.color = "red";
     input.disabled = true;
