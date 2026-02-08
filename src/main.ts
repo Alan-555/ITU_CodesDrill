@@ -1,24 +1,79 @@
+import { Database } from './database';
 import './style.css'
-import typescriptLogo from './typescript.svg'
-import viteLogo from '/vite.svg'
-import { setupCounter } from './counter.ts'
+import { CurrentQuestion } from './types';
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://www.typescriptlang.org/" target="_blank">
-      <img src="${typescriptLogo}" class="logo vanilla" alt="TypeScript logo" />
-    </a>
-    <h1>Vite + TypeScript</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite and TypeScript logos to learn more
-    </p>
-  </div>
-`
+const code = document.getElementById("code")!;
+const input = document.getElementById("input")! as HTMLInputElement;
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)
+input.oninput = () => CheckInput();
+window.onkeyup = (e) => {
+    if (e.key == "Enter" || e.keyCode == 13){
+        if(incorrectSkip)
+            Incorrect();
+        else
+            CheckInput(true)
+    }
+};
+
+window.onload = ReadyNewQuestion;
+
+let currentQuestion: CurrentQuestion;
+
+
+function SelectNewQuestion() {
+    let codes = Database.Codes;
+    let randomCode = codes[Math.floor(Math.random() * codes.length)];
+    currentQuestion = new CurrentQuestion(randomCode, Database.Data[randomCode], Math.random() >= 0.5);
+}
+
+function CheckInput(force = false) {
+    let possibleAnswers = Database.GetGuessed(currentQuestion).filter(c => c.toLowerCase().startsWith(input.value.toLowerCase()));
+    if (possibleAnswers.length == 1 && (input.value.length / possibleAnswers[0].length) >= 0.5) {
+        if (possibleAnswers[0] == currentQuestion.GuessedString)
+            Correct();
+    }
+    if(force){
+        if(input.value.toLowerCase() == currentQuestion.GuessedString.toLowerCase())
+            Correct();
+        else
+            Incorrect();
+    }
+}
+
+function ReadyNewQuestion() {
+    SelectNewQuestion();
+    code.innerHTML = currentQuestion.GivenString;
+    input.value = "";
+    input.style.color = "black";
+    input.disabled = false;
+    input.focus();
+}
+
+
+async function Correct() {
+    input.value = currentQuestion.GuessedString;
+    input.style.color = "green";
+    input.disabled = true;
+    await Sleep(1000);
+    ReadyNewQuestion();
+}
+
+let incorrectSkip = false;
+
+async function Incorrect() {
+    if (incorrectSkip) {
+        ReadyNewQuestion();
+        incorrectSkip = false;
+        return;
+    }
+    input.value = currentQuestion.GuessedString;
+    input.style.color = "red";
+    input.disabled = true;
+    incorrectSkip = true;
+}
+
+
+const Sleep = (time: number) =>
+    new Promise((res) => {
+        setTimeout(res, time);
+    });
