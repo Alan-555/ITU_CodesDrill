@@ -2,6 +2,7 @@ import { Database } from './database';
 import './style.css'
 import { CurrentQuestion } from './types';
 import "./editor.ts";
+import { IsEditorHidden, ToggleEditor } from './editor.ts';
 
 const code = document.getElementById("code")!;
 const input = document.getElementById("input")! as HTMLInputElement;
@@ -34,7 +35,8 @@ let currentQuestion: CurrentQuestion;
 export function StartGame(){
     gameStart = true;
     document.getElementById("noDataNotice")!.hidden = true;
-    gameElement.hidden = false;
+    if(IsEditorHidden())
+        SetGameHiddenState(false);
     ReadyNewQuestion();
 }
 
